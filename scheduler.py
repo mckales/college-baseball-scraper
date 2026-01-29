@@ -8,9 +8,7 @@ import time
 import logging
 from datetime import datetime
 import pytz
-from scraper.scraper_api import scrape_player
-from base44_integration import send_to_base44
-import json
+from base44_integration import run_sync
 
 # Configure logging
 logging.basicConfig(
@@ -30,58 +28,17 @@ CENTRAL_TZ = pytz.timezone('America/Chicago')
 def run_scraper_job():
     """
     Main scraper job that runs on schedule.
-    Scrapes all configured players and sends data to Base44.
+    Fetches players from Base44, scrapes their stats, and pushes results back.
     """
     current_time = datetime.now(CENTRAL_TZ).strftime('%Y-%m-%d %H:%M:%S %Z')
     logger.info(f"Starting scheduled scraper run at {current_time}")
     
     try:
-        # Load player list from configuration
-        with open('players_to_track.json', 'r') as f:
-            players = json.load(f)
+        # Run the sync (fetch players, scrape, push)
+        result = run_sync()
         
-        success_count = 0
-        error_count = 0
+        logger.info(f"Scraper run complete. Success: {result['success_count']}, Errors: {result['error_count']}, Total: {result['total']}")
         
-        for player in players:
-            try:
-                player_name = player['name']
-                jersey_number = player['number']
-                school = player['school']
-                sport = player.get('sport', 'baseball')
-                
-                logger.info(f"Scraping: {player_name} #{jersey_number} from {school} ({sport})")
-                
-                # Run the scraper
-                stats = scrape_player(
-                    player_name=player_name,
-                    jersey_number=jersey_number,
-                    school=school,
-                    sport=sport,
-                    season="2026",
-                    output_format="json"
-                )
-                
-                # Send to Base44
-                if stats:
-                    send_to_base44(stats, player)
-                    success_count += 1
-                    logger.info(f"Successfully updated {player_name}")
-                else:
-                    logger.warning(f"No stats found for {player_name}")
-                    error_count += 1
-                
-                # Small delay between players to avoid rate limiting
-                time.sleep(2)
-                
-            except Exception as e:
-                error_count += 1
-                logger.error(f"Error scraping {player.get('name', 'unknown')}: {str(e)}")
-        
-        logger.info(f"Scraper run complete. Success: {success_count}, Errors: {error_count}")
-        
-    except FileNotFoundError:
-        logger.error("players_to_track.json not found. Please create this file with player configuration.")
     except Exception as e:
         logger.error(f"Fatal error in scraper job: {str(e)}")
 
@@ -110,8 +67,8 @@ def schedule_jobs():
     schedule.every().day.at("00:00").do(run_scraper_job)
     
     logger.info("Scheduler configured with 14 daily runs:")
-    logger.info("  - 9:00 AM")
-    logger.info("  - Every hour from 12:00 PM to 12:00 AM")
+    logger.info(" - 9:00 AM")
+    logger.info(" - Every hour from 12:00 PM to 12:00 AM")
 
 if __name__ == "__main__":
     logger.info("=" * 50)
