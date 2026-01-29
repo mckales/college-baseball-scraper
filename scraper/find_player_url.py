@@ -1,10 +1,11 @@
 """
 Find a player's individual page URL by searching the team roster.
+Supports multiple platforms: SIDEARM, PrestoSports, NCAA.com, and generic sites.
 """
 
 import requests
 from bs4 import BeautifulSoup
-from .config import SCHOOLS
+from .config import SCHOOLS, get_platform_selectors, detect_platform
 import re
 
 
@@ -23,77 +24,82 @@ def find_player_url(player_name, jersey_number, school):
         school (str): School name (e.g., "Belmont")
     
     Returns:
-        str: Full URL to player's individual page
-        
+        tuple: (player_url, platform_type) or (None, None) if not found
+    
     Raises:
         ValueError: If school not found in config or player not found on roster
     """
+    # Get school configuration
+    school_config = SCHOOLS.get(school)
+    if not school_config:
+        raise ValueError(f"School '{school}' not found in configuration. Available schools: {list(SCHOOLS.keys())}")
     
-    # Validate school
-    if school not in SCHOOLS:
-        raise ValueError(f"School '{school}' not found in config. Available schools: {list(SCHOOLS.keys())}")
-    
-    school_config = SCHOOLS[school]
     roster_url = school_config["roster_url"]
+    platform_type = school_config.get("type", "generic")
     
-    print(f"Searching for {player_name} #{jersey_number} at {school}...")
-    print(f"Roster URL: {roster_url}")
+    # Auto-detect platform if not specified
+    if platform_type == "generic":
+        platform_type = detect_platform(school_config["domain"])
     
-    # Fetch roster page
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-    }
+    # Get platform-specific selectors
+    selectors = get_platform_selectors(platform_type)
     
+    # Fetch the roster page
     try:
-        response = requests.get(roster_url, headers=headers, timeout=10)
+        response = requests.get(roster_url, timeout=10)
         response.raise_for_status()
     except requests.RequestException as e:
-        raise ValueError(f"Failed to fetch roster page: {e}")
+        raise ValueError(f"Failed to fetch roster from {roster_url}: {str(e)}")
     
-    soup = BeautifulSoup(response.text, 'lxml')
+    soup = BeautifulSoup(response.text, 'html.parser')
     
-    # Normalize search terms
-    normalized_name = normalize_name(player_name)
+    # Normalize inputs
+    normalized_player = normalize_name(player_name)
     jersey_str = str(jersey_number).strip()
     
-    # Find all player links on roster
-    # Sidearm sites typically have roster items with player links
-    player_links = soup.find_all('a', href=re.compile(r'/sports/baseball/roster/'))
+    # Find all player cards/rows on the roster
+    player_cards = soup.select(selectors["roster_card"])
     
-    print(f"Found {len(player_links)} players on roster")
+    if not player_cards:
+        raise ValueError(f"No players found on roster page {roster_url}. Check platform selectors for '{platform_type}'.")
     
-    # Search through players
-    for link in player_links:
-        link_text = link.get_text(strip=True)
-        link_normalized = normalize_name(link_text)
+    # Search for the player
+    for card in player_cards:
+        # Extract player name
+        name_elem = card.select_one(selectors["player_name"])
+        if not name_elem:
+            continue
         
-        # Check if name matches
-        name_match = normalized_name in link_normalized or link_normalized in normalized_name
+        card_name = normalize_name(name_elem.get_text())
         
-        # Try to find jersey number near this link
-        parent = link.find_parent(['li', 'div', 'tr'])
-        if parent:
-            parent_text = parent.get_text()
-            number_match = jersey_str in parent_text or f"#{jersey_str}" in parent_text
-        else:
-            number_match = False
+        # Extract jersey number
+        number_elem = card.select_one(selectors["player_number"])
+        card_number = number_elem.get_text().strip() if number_elem else ""
         
-        # If name matches (and optionally number matches), return URL
-        if name_match:
-            if number_match or not jersey_number:  # Number match or no number provided
-                player_path = link.get('href')
+        # Match by name AND number for accuracy
+        name_match = normalized_player in card_name or card_name in normalized_player
+        number_match = jersey_str == card_number
+        
+        if name_match and number_match:
+            # Find the player's profile link
+            link_elem = card.select_one(selectors["player_link"])
+            if not link_elem:
+                link_elem = card.find_parent('a') or card.find('a')
+            
+            if link_elem and link_elem.get('href'):
+                player_url = link_elem['href']
                 
-                # Build full URL
-                if player_path.startswith('http'):
-                    full_url = player_path
-                else:
-                    full_url = f"https://{school_config['domain']}{player_path}"
+                # Make URL absolute if it's relative
+                if player_url.startswith('/'):
+                    base_url = f"https://{school_config['domain']}"
+                    player_url = base_url + player_url
+                elif not player_url.startswith('http'):
+                    player_url = roster_url.rsplit('/', 1)[0] + '/' + player_url
                 
-                print(f"✓ Found player: {full_url}")
-                return full_url
+                return player_url, platform_type
     
-    # If we get here, player wasn't found
+    # Player not found
     raise ValueError(
-        f"Could not find player '{player_name}' #{jersey_number} on {school} roster. "
-        "Check spelling and make sure player is on current roster."
+        f"Player '{player_name}' (#{jersey_number}) not found on {school} roster. "
+        f"Found {len(player_cards)} players on page. Check spelling and number."
     )
