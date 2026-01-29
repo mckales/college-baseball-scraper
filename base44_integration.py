@@ -197,8 +197,7 @@ def run_sync():
                 f"{player['school']} ({player.get('season', '2026')})"
             )
 
-            210
-            (
+            result = get_player_stats            (
                 player_name=player["name"],
                 jersey_number=str(player["number"]),
                 school=player["school"],
