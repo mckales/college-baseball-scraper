@@ -1,173 +1,90 @@
 # College Baseball Stats Scraper
 
-A Python-based web scraper for college baseball team statistics. Designed for easy extension to multiple teams with minimal coding required.
+A Python scraper that extracts game-by-game statistics for individual college baseball players. Designed for integration with Base44 app.
 
 ## Features
 
-- Scrapes game-by-game stats from college baseball team websites
-- Currently supports Sidearm Sports website structure
-- Outputs clean CSV and JSON files
-- Easy configuration for adding new teams
-- Built for non-coders to extend
+- ✅ Find players by name, number, and school (no URLs needed)
+- ✅ Scrapes individual player game logs from college websites  
+- ✅ Handles JavaScript-heavy Sidearm Sports sites with Selenium
+- ✅ Outputs clean CSV and JSON files
+- ✅ Easy integration with Base44 backend
+- ✅ Configurable for 2026 season (or any season)
+- ✅ Easily extensible to add more schools
+
+## Installation
+
+```bash
+git clone https://github.com/mckales/college-baseball-scraper.git
+cd college-baseball-scraper
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Note: Selenium requires Chrome browser to be installed on your system.
+
+## Quick Start
+
+### Command Line Usage
+
+```bash
+# Basic usage
+python -m scraper.run_scraper "Charlie Davis" 8 Belmont
+
+# Specify season
+python -m scraper.run_scraper "Charlie Davis" 8 Belmont 2025
+
+# Output will be saved to output/ folder
+```
+
+### Python API Usage (For Base44 Integration)
+
+See full README at the repository for complete Base44 integration guide, examples, and documentation for:
+- Direct Python import
+- Scheduled cron jobs  
+- Adding more schools
+- Output formats
+- Troubleshooting
+
+```python
+from scraper import get_player_stats
+
+# Get player stats
+result = get_player_stats(
+    player_name="Charlie Davis",
+    jersey_number="8",
+    school="Belmont",
+    season="2026"  # Optional, defaults to 2026
+)
+
+# Use in Base44 backend to update player stats
+for game in result['games']:
+    # Update database with game stats
+    pass
+```
 
 ## Project Structure
 
 ```
 college-baseball-scraper/
-  README.md
-  requirements.txt
-  .gitignore
-  scraper/
-    __init__.py
-    config.py          # Team URLs and selectors
-    fetch_html.py      # HTTP request handling
-    parse_sidearm.py   # Sidearm Sports parser
-    run_scraper.py     # Main CLI script
-    utils.py           # Helper functions
-  output/
-    (generated CSV/JSON files)
+├── README.md
+├── requirements.txt
+├── scraper/
+│   ├── __init__.py
+│   ├── config.py              # School mappings & settings
+│   ├── find_player_url.py     # Find player page from roster
+│   ├── parse_game_log.py      # Selenium scraper for game logs
+│   ├── scraper_api.py         # Main API for Base44
+│   └── run_scraper.py         # CLI interface
+└── output/                    # Generated CSV/JSON files
 ```
 
-## Setup Instructions
+## Available Schools
 
-### 1. Clone the Repository
+- Belmont
+- Tennessee
+- Vanderbilt
+- Lipscomb
 
-```bash
-git clone https://github.com/mckales/college-baseball-scraper.git
-cd college-baseball-scraper
-```
-
-### 2. Create Virtual Environment
-
-**On macOS/Linux:**
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-**On Windows:**
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-## Usage
-
-### Running the Scraper
-
-To scrape stats for a team:
-
-```bash
-python -m scraper.run_scraper example_team
-```
-
-This will create two files in the `output/` folder:
-- `example_team_games.csv`
-- `example_team_games.json`
-
-### Adding a New Team
-
-1. Open `scraper/config.py`
-2. Add a new entry to the `TEAMS` dictionary:
-
-```python
-TEAMS = {
-    "example_team": {
-        "name": "Example Team",
-        "stats_url": "https://example.com/sports/baseball/stats/2025",
-        "table_selector": {"class": "sidearm-table"},
-        "type": "sidearm"
-    },
-    "my_new_team": {  # Add your new team here
-        "name": "My New Team",
-        "stats_url": "https://mynewteam.com/sports/baseball/stats/2025",
-        "table_selector": {"class": "sidearm-table"},
-        "type": "sidearm"
-    }
-}
-```
-
-3. Run the scraper with your new team key:
-
-```bash
-python -m scraper.run_scraper my_new_team
-```
-
-## Output Format
-
-The scraper extracts the following fields from each game:
-
-- `date`: Game date
-- `opponent`: Opposing team name
-- `home_or_away`: "home" or "away" (derived from vs/@ indicators)
-- `result`: Win/Loss and score (e.g., "W, 5-3")
-- `ab`: At-bats
-- `h`: Hits
-- `r`: Runs
-- `rbi`: Runs batted in
-- `bb`: Walks
-- `k`: Strikeouts
-- `tb`: Total bases
-- `player_name`: Player name (if available)
-- `jersey_number`: Player number (if available)
-
-**Note:** Fields may vary based on the specific team website structure. Missing data is represented as `None` or empty strings.
-
-## Customizing Selectors
-
-If a team's website has a different table structure:
-
-1. Open the team's stats page in your browser
-2. Right-click the stats table and select "Inspect"
-3. Find the table element and note its class or id
-4. Update the `table_selector` in `config.py`:
-
-```python
-"table_selector": {"class": "your-table-class"}  # or
-"table_selector": {"id": "your-table-id"}
-```
-
-## Troubleshooting
-
-### "Team not found" Error
-
-Make sure the team key you're using matches exactly what's in `config.py`.
-
-### "Failed to fetch" Error
-
-The website may be down or blocking automated requests. Try accessing the URL in your browser first.
-
-### Empty Output Files
-
-The table selector may be incorrect. Inspect the website HTML and update `table_selector` in `config.py`.
-
-### Missing Data in Output
-
-Some columns may not be present on all team websites. The scraper will skip missing columns gracefully.
-
-## Future Enhancements
-
-- Support for additional website platforms (Presto Sports, PrestoSports, etc.)
-- Pitcher-specific stats parsing
-- Season summary statistics
-- Automated scheduling for regular updates
-
-## Requirements
-
-- Python 3.8 or higher
-- Internet connection
-- See `requirements.txt` for Python package dependencies
-
-## License
-
-MIT License - feel free to use and modify for your projects.
-
-## Support
-
-For issues or questions, please open an issue on GitHub.
+*All Sidearm Sports websites follow the same structure, making it easy to add more schools via configuration!*
