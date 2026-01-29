@@ -1,6 +1,5 @@
 """
-Configuration for college baseball scraper.
-Maps school names to their website domains and roster URLs.
+Configuration for college baseball/softball scraper.Maps school names to their website domains and roster URLs.
 Supports multiple platforms: SIDEARM, PrestoSports, NCAA.com, and more.
 """
 
@@ -107,3 +106,25 @@ def get_platform_selectors(platform_type):
     Returns selector dict.
     """
     return PLATFORM_SELECTORS.get(platform_type, PLATFORM_SELECTORS["generic"])
+
+
+def get_roster_url(school_name, sport="baseball"):
+    """
+    Get roster URL for a specific school and sport.
+    
+    Args:
+        school_name (str): School name (e.g., "Belmont")
+        sport (str): Sport name ("baseball" or "softball")
+    
+    Returns:
+        str: Full roster URL
+    """
+    school_config = SCHOOLS.get(school_name)
+    if not school_config:
+        raise ValueError(f"School '{school_name}' not found in configuration. Available schools: {list(SCHOOLS.keys())}")
+    
+    # Default to baseball if sport not recognized
+    sport_path = sport.lower() if sport.lower() in ["baseball", "softball"] else "baseball"
+    domain = school_config["domain"]
+    
+    return f"https://{domain}/sports/{sport_path}/roster"
