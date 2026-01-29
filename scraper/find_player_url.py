@@ -5,8 +5,7 @@ Supports multiple platforms: SIDEARM, PrestoSports, NCAA.com, and generic sites.
 
 import requests
 from bs4 import BeautifulSoup
-from .config import SCHOOLS, get_platform_selectors, detect_platform
-import re
+from .config import SCHOOLS, get_platform_selectors, detect_platform, get_roster_urlimport re
 
 
 def normalize_name(name):
@@ -14,14 +13,14 @@ def normalize_name(name):
     return re.sub(r'\s+', ' ', name.lower().strip())
 
 
-def find_player_url(player_name, jersey_number, school):
-    """
+def find_player_url(player_name, jersey_number, school, sport="baseball"):    """
     Find a player's individual page URL from the roster.
     
     Args:
         player_name (str): Player's full name (e.g., "Charlie Davis")
         jersey_number (str or int): Jersey number (e.g., "8" or 8)
         school (str): School name (e.g., "Belmont")
+                sport (str): Sport name ("baseball" or "softball", default: "baseball")
     
     Returns:
         tuple: (player_url, platform_type) or (None, None) if not found
@@ -38,8 +37,7 @@ def find_player_url(player_name, jersey_number, school):
     platform_type = school_config.get("type", "generic")
     
     # Auto-detect platform if not specified
-    if platform_type == "generic":
-        platform_type = detect_platform(school_config["domain"])
+    roster_url = get_roster_url(school, sport)        platform_type = detect_platform(school_config["domain"])
     
     # Get platform-specific selectors
     selectors = get_platform_selectors(platform_type)
