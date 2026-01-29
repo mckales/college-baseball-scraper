@@ -1,8 +1,10 @@
 """
-College Baseball Stats Scraper
-
-A modular scraper for extracting game statistics from college baseball team websites.
+College Baseball Scraper
+Scrapes individual player game logs from college baseball team websites.
 """
 
-__version__ = "1.0.0"
-__author__ = "Your Name"
+from .scraper_api import get_player_stats, get_player_stats_json
+from .config import SCHOOLS, DEFAULT_SEASON
+
+__version__ = "2.0.0"
+__all__ = ["get_player_stats", "get_player_stats_json", "SCHOOLS", "DEFAULT_SEASON"]
