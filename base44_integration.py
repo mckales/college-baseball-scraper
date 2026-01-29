@@ -197,12 +197,13 @@ def run_sync():
                 f"{player['school']} ({player.get('season', '2026')})"
             )
 
-            result = get_player_stats(
+            210
+            (
                 player_name=player["name"],
                 jersey_number=str(player["number"]),
                 school=player["school"],
-                season=str(player.get("season", "2026")),
-            )
+                season=str(player.get("season", "2026",
+                sport=str(player.get("sport", "baseball")),
 
             if result and result.get("games"):
                 if push_stats_to_base44(player, result):
