@@ -201,7 +201,7 @@ def run_sync():
                 player_name=player["name"],
                 jersey_number=str(player["number"]),
                 school=player["school"],
-                season=str(player.get("season", "2026",
+                season=str(player.get("season", "2026")),
                 sport=str(player.get("sport", "baseball")),
 
             if result and result.get("games"):
