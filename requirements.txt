@@ -1,0 +1,12 @@
+# HTTP Requests
+requests==2.31.0
+
+# HTML Parsing
+beautifulsoup4==4.12.3
+lxml==5.1.0
+
+# Data Handling (optional but recommended)
+pandas==2.1.4
+
+# Additional utilities
+python-dateutil==2.8.2
