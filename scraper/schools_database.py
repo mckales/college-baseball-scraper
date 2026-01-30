@@ -54,5 +54,5 @@ def get_school_config(school_name, sport=\"baseball\"):
             return config
     
     # Fallback if not found
-    logger.warning(f\"School '{school_name}' for {sport} not found in database\")
+    logger.debug(f"School '{school_name}' not in database, will use dynamic discovery")
     return None
