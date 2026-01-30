@@ -128,3 +128,29 @@ def get_roster_url(school_name, sport="baseball"):
     domain = school_config["domain"]
     
     return f"https://{domain}/sports/{sport_path}/roster"
+
+def get_schedule_url(school_name, sport="baseball"):
+    """
+    Get schedule URL for a specific school and sport.
+    
+    Args:
+        school_name (str): School name (e.g., "Belmont")
+        sport (str): Sport name ("baseball" or "softball")
+    
+    Returns:
+        str: Full schedule URL or None if school not found
+    """
+    school_config = SCHOOLS.get(school_name)
+    if not school_config:
+        # Try to find school in schools_database if not in config
+        from .schools_database import get_school_config as get_db_config
+        db_config = get_db_config(school_name, sport)
+        if db_config and 'team_website' in db_config:
+            return db_config['team_website']
+        return None
+    
+    # Default to baseball if sport not recognized
+    sport_path = sport.lower() if sport.lower() in ["baseball", "softball"] else "baseball"
+    domain = school_config["domain"]
+    
+    return f"https://{domain}/sports/{sport_path}/schedule"
