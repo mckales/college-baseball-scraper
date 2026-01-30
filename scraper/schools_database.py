@@ -14,13 +14,15 @@ SCHOOLS_DB = {
         \"ncaa_name\": \"Georgia Institute of Technology\",
         \"platform\": \"sidearm\",
         \"division\": \"D1\",
-        \"sport\": \"baseball\"
+        \"sport\": \"baseball\",
+        "team_website": "https://ramblinwreck.com/sports/baseball/schedule"
     },
     \"North Carolina\": {
         \"ncaa_name\": \"University of North Carolina\",
         \"platform\": \"sidearm\",
         \"division\": \"D1\",
-        \"sport\": \"baseball\"
+        \"sport\": \"baseball\",
+        "team_website": "https://goheels.com/sports/baseball/schedule"
     },
     # Add more D1 schools here...
 
@@ -29,7 +31,8 @@ SCHOOLS_DB = {
         \"ncaa_name\": \"University of Oklahoma\",
         \"platform\": \"sidearm\",
         \"division\": \"D1\",
-        \"sport\": \"softball\"
+        \"sport\": \"softball\",
+        "team_website": "https://soonersports.com/sports/softball/schedule"
     },
     # Add more softball schools here...
 
@@ -38,7 +41,8 @@ SCHOOLS_DB = {
         \"ncaa_name\": \"Belmont Abbey College\",
         \"platform\": \"presto\",
         \"division\": \"D2\",
-        \"sport\": \"baseball\"
+        \"sport\": \"baseball\",
+        "team_website": "https://abbeyathletics.com/sports/baseball/schedule"
     }
 }
 
