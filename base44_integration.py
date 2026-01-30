@@ -8,8 +8,11 @@ import os
 import asyncio
 from datetime import datetime
 import requests
+import aiohttp
 from scraper.scraper_api import get_player_stats
 from scraper.error_handler import log_error
+from scraper.schedule_scraper import scrape_team_schedule
+from scraper.config import get_schedule_url
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +29,7 @@ BASE44_API_URL = BASE44_API_URL.rstrip("/")
 # API Endpoints
 PLAYERS_ENDPOINT = f"{BASE44_API_URL}/api/getPlayersToScrape"
 STATS_WEBHOOK = f"{BASE44_API_URL}/api/receivePlayerStats"
+UPCOMING_GAMES_WEBHOOK = f"{BASE44_API_URL}/api/receiveUpcomingGames"
 
 def fetch_players_from_base44():
     """Fetch the list of players to scrape from Base44."""
@@ -69,11 +73,29 @@ def push_stats_to_base44(player, stats_result):
         logger.error(f"Failed to push stats for {player.get('name', 'unknown')}: {e}")
         return False
 
+def push_upcoming_games_to_base44(school_name, games):
+    """Push upcoming games for a team to Base44."""
+    try:
+        payload = {
+            "school": school_name,
+            "upcomingGames": games,
+            "last_updated": datetime.utcnow().isoformat() + "Z",
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": BASE44_API_KEY,
+        }
+        response = requests.post(UPCOMING_GAMES_WEBHOOK, json=payload, headers=headers, timeout=30)
+        response.raise_for_status()
+        logger.info(f"Successfully pushed {len(games)} upcoming games for {school_name}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to push upcoming games for {school_name}: {e}")
+        return False
+
 async def process_player(player):
     """Async wrapper for get_player_stats and push."""
     try:
-        # Since get_player_stats is currently sync (due to Selenium/requests),
-        # we run it in a thread pool to avoid blocking the event loop.
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None, 
@@ -94,19 +116,35 @@ async def process_player(player):
         logger.error(f"Error in process_player for {player.get('name')}: {e}")
         return False
 
+async def sync_schedules(players):
+    """Sync schedules for all unique schools in the player list."""
+    schools = list(set(p["school"] for p in players))
+    logger.info(f"Syncing schedules for {len(schools)} schools...")
+    
+    async with aiohttp.ClientSession() as session:
+        for school in schools:
+            schedule_url = get_schedule_url(school)
+            if schedule_url:
+                upcoming_games = await scrape_team_schedule(session, schedule_url)
+                if upcoming_games:
+                    push_upcoming_games_to_base44(school, upcoming_games)
+
 async def run_sync_async(concurrency=5):
     """Main sync function with concurrency control."""
     logger.info("Starting Base44 sync...")
     players = fetch_players_from_base44()
     if not players:
         return
-        
+    
+    # Sync upcoming games
+    await sync_schedules(players)
+    
     semaphore = asyncio.Semaphore(concurrency)
     
     async def sem_process(player):
         async with semaphore:
             return await process_player(player)
-            
+    
     tasks = [sem_process(p) for p in players]
     results = await asyncio.gather(*tasks)
     
