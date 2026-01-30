@@ -147,6 +147,27 @@ def get_schedule_url(school_name, sport="baseball"):
         db_config = get_db_config(school_name, sport)
         if db_config and 'team_website' in db_config:
             return db_config['team_website']
+                    
+        # Last resort: Try Google search
+        try:
+            import requests
+            from bs4 import BeautifulSoup
+            
+            query = f"{school_name} {sport} schedule"
+            search_url = f"https://www.google.com/search?q={requests.utils.quote(query)}"
+            response = requests.get(search_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Look for athletic website links
+            for link in soup.find_all('a', href=True):
+                href = link['href']
+                if '/sports/' in href and '/schedule' in href:
+                    if 'url?q=' in href:
+                        # Extract actual URL from Google redirect
+                        actual_url = href.split('url?q=')[1].split('&')[0]
+                        return actual_url
+        except:
+            pass
         return None
     
     # Default to baseball if sport not recognized
