@@ -5,7 +5,8 @@ Supports multiple platforms: SIDEARM, PrestoSports, NCAA.com, and generic sites.
 
 import requests
 from bs4 import BeautifulSoup
-from .config import SCHOOLS, get_platform_selectors, detect_platform, get_roster_urlimport re
+from .config import SCHOOLS, 
+get_platform_selectors, detect_platform, get_roster_urlimport re
 
 
 def normalize_name(name):
