@@ -25,6 +25,11 @@ SCHOOLS_DB = {
         "team_website": "https://goheels.com/sports/baseball/schedule"
     },
     # Add more D1 schools here...
+    "Ashland": {
+    "sport": "baseball",
+    "team_website": "https://goashlandeagles.com/sports/baseball/schedule/2026"
+}
+
 
     # D1 Softball
     \"Oklahoma\": {
